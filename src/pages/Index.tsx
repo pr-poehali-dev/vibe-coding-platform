@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
+import AuthModal from '@/components/AuthModal';
 
 interface Message {
   id: string;
@@ -20,6 +21,10 @@ interface Project {
 }
 
 const VibeCoding = () => {
+  const [user, setUser] = useState<any>(null);
+  const [token, setToken] = useState<string>('');
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -36,6 +41,30 @@ const VibeCoding = () => {
     status: 'active',
     lastUpdate: new Date()
   });
+
+  useEffect(() => {
+    const savedToken = localStorage.getItem('auth_token');
+    const savedUser = localStorage.getItem('user_data');
+    
+    if (savedToken && savedUser) {
+      setToken(savedToken);
+      setUser(JSON.parse(savedUser));
+    }
+  }, []);
+
+  const handleLogin = (userData: any, authToken: string) => {
+    setUser(userData);
+    setToken(authToken);
+    localStorage.setItem('auth_token', authToken);
+    localStorage.setItem('user_data', JSON.stringify(userData));
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    setToken('');
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_data');
+  };
 
   const [codePreview, setCodePreview] = useState(`// Сгенерированный код появится здесь
 import React from 'react';
@@ -134,13 +163,26 @@ export default ${newMessage.includes('кнопка') ? 'ButtonComponent' : 'NewC
           </div>
           
           <div className="flex items-center space-x-4">
-            <Button variant="outline" size="sm">
-              <Icon name="Github" size={16} className="mr-2" />
-              GitHub
-            </Button>
-            <Button variant="outline" size="sm">
-              <Icon name="Settings" size={16} />
-            </Button>
+            {user ? (
+              <>
+                <div className="flex items-center space-x-2 text-sm">
+                  <Icon name="User" size={16} className="text-primary" />
+                  <span className="font-medium">{user.username}</span>
+                </div>
+                <Button variant="outline" size="sm">
+                  <Icon name="Github" size={16} className="mr-2" />
+                  GitHub
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleLogout}>
+                  <Icon name="LogOut" size={16} />
+                </Button>
+              </>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => setShowAuthModal(true)}>
+                <Icon name="LogIn" size={16} className="mr-2" />
+                Войти
+              </Button>
+            )}
           </div>
         </div>
       </header>
@@ -265,6 +307,12 @@ export default ${newMessage.includes('кнопка') ? 'ButtonComponent' : 'NewC
           </div>
         </div>
       </div>
+
+      <AuthModal 
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onLogin={handleLogin}
+      />
     </div>
   );
 };
